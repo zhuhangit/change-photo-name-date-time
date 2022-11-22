@@ -1,17 +1,33 @@
-# 批量修改照片名称-日期-时间
+# 批量修改照片日期时间
 
-具体介绍可阅读：[批量修改照片名称日期时间【Python】 (bcwyatt.com)](https://bcwyatt.com/blogs/6)
+> 根据照片名称修改
+>
+> 支持年月日时分秒、年月日格式
+>
+> 支持Exif拍摄时间
 
-如果照片缺失了日期信息，在相册中就会显示在错误的时间线上，这让强迫症患者很苦恼。
 
-不同APP产生的图片会有不同的命名规则，在文件夹中很不统一，这也让强迫症患者很苦恼。
 
-针对上面两个问题写了这个Python脚本，能够实现下面两个功能：
+### 自用模式
 
-1. 根据照片名称修改照片日期：根据照片名中包含的日期信息，修改照片Exif中的日期信息
-2. 根据照片日期修改照片名称：根据照片Exif中的日期信息，按照统一格式重命名照片
+1. 默认time模式
+1. 支持文件夹递归
+1. 支持文件名年月日模式
+1. 兼容时分秒格式错误
 
-# 使用示例
 
-运行脚本会提示你想要修改name还是time，输入对应的单词就行。会动态输出倒序计数，显示正在处理哪个照片和处理的结果，最后会统计不能操作的图片及原因。
-![IMG_202211171102599](https://img-1313032483.cos.ap-beijing.myqcloud.com/202211171102599.webp)
+
+### 注意事项
+
+1. 安装python环境
+1. 安装piexif，pip install piexif
+1. 安装pillow，pip install pillow
+
+
+
+#### 参考资料
+
+1. [项目来源](https://github.com/bcwyatt/change-photo-name-date-time)
+2. [报错：No module named 'PIL'解决方法](https://blog.csdn.net/weixin_44037416/article/details/96842058)
+3. [判断文件和文件夹是否存在的方法](http://www.kaotop.com/it/35027.html)
+4. [time strptime()方法](https://www.runoob.com/python/att-time-strptime.html)
