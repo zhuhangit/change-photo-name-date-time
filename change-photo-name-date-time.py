@@ -204,7 +204,7 @@ if __name__ == '__main__':
     '''
     folder: 需要修改的照片文件夹路径
     '''
-    folder = r'D:\下载\QQ空间备份_645461002\Albums\亲人\亲情'  # 此处改为需要修改的照片文件夹路径
+    folder = r'D:\下载\test'  # 此处改为需要修改的照片文件夹路径
     no_exif, exif_load_error, no_time_in_name = [[] for i in range(3)]
 
     # motion = input('Change name or time: ') # 输入需要修改照片name还是time
