@@ -31,3 +31,4 @@
 2. [报错：No module named 'PIL'解决方法](https://blog.csdn.net/weixin_44037416/article/details/96842058)
 3. [判断文件和文件夹是否存在的方法](http://www.kaotop.com/it/35027.html)
 4. [time strptime()方法](https://www.runoob.com/python/att-time-strptime.html)
+5. [QQ空间备份神器](https://www.lvshuncai.com/archives/qzone-export.html)
