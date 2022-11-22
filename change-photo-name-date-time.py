@@ -6,6 +6,7 @@
 import os, time, piexif, re
 import re
 from PIL import Image
+from os import path
 
 # ------------------------------------------------------------------
 ## general functions
@@ -123,26 +124,36 @@ def change_photo_time(folder):
         if check_format(photo_path) == 'PNG': 
             photo_path = png2jpg(photo_path)
         if check_format(photo_path) in ['JPG', 'JPEG']:
-            set_photo_time(photo_name, photo_path)
+            set_photo_time(photo_name, photo_path, folder)
         else:
-            print('  Not JPG file, end process\n')
+            if not path.isfile(os.path.join(folder, photo_name)):
+                # 文件夹递归
+                change_photo_time(os.path.join(folder, photo_name))
+            else:
+                print(f'  Not JPG file, end process\n')
 
 
-def get_time_from_name(photo_name):
+def get_time_from_name(photo_name, folder):
     '''
     利用正则表达式从文件名中提取时间，再转换为Exif时间格式
     from 'IMG_20220102_030405.jpg' to '2022:01:01 03:04:05'
     '''
     pn = photo_name
     # 文件名包含年月日时分秒，无分隔符或分隔符为（-._/）四种之一，如'2022.08.08_07/58/10.jpg'
-    pattern_1 = re.compile(r'\d{4}([-|.|/|_]?\d{2}){5}')
+    pattern_1 = re.compile(r'\d{4}([-|.|/|_]?\d{2}){2}([-|.|/|_]?[0-5][0-9]){3}')
     pattern_2 = re.compile(r'\d{10}')  # 文件名包含时间戳，如'mmexport1569824283462.jpg'
+    #仅日期
+    pattern_3 = re.compile(r'\d{4}([-|.|/|_]?\d{2}){2}') # 01_2015-09-07_F4CCBCFE (1).jpeg
 
     if pattern_1.search(pn):  # 满足pattern_1，文件名包含年月日时分秒
         pn = pattern_1.search(pn).group()
         pn = pn.replace('_', '').replace('-', '').replace('.', '').replace('/', '')
         photo_time = f'{pn[0:4]}:{pn[4:6]}:{pn[6:8]} {pn[8:10]}:{pn[10:12]}:{pn[12:14]}'
-    elif pattern_2.search(pn):  # 满足pattern_2，文件名包含时间戳
+    elif pattern_3.search(pn):  # 满足pattern_1，文件名包含年月日
+        pn = pattern_3.search(pn).group()
+        pn = pn.replace('_', '').replace('-', '').replace('.', '').replace('/', '')
+        photo_time = f'{pn[0:4]}:{pn[4:6]}:{pn[6:8]} 00:00:00'
+    elif pattern_2.search(pn):  # 满足pattern_2，文件名包含时间戳tim
         pn = pattern_2.search(pn).group()
         photo_time = time.strftime('%Y:%m:%d %H:%M:%S', time.localtime(int(pn)))
     elif check_exif(os.path.join(folder, photo_name)):  # 文件名中没有时间，但Exif中有时间
@@ -157,11 +168,11 @@ def get_time_from_name(photo_name):
     return photo_time
 
 
-def set_photo_time(photo_name, photo_path):
+def set_photo_time(photo_name, photo_path, folder):
     '''
     给照片设置拍摄时间，导入exif信息
     '''
-    photo_time = get_time_from_name(photo_name)  # 格式为'2024:04:22 07:58:10'
+    photo_time = get_time_from_name(photo_name, folder)  # 格式为'2024:04:22 07:58:10'
     try:
         exif_dict = piexif.load(photo_path)  # 读取现有Exif信息
         # 设置Exif信息，注意DateTime在ImageIFD里面
@@ -193,16 +204,17 @@ if __name__ == '__main__':
     '''
     folder: 需要修改的照片文件夹路径
     '''
-    folder = r'D:\4 照片\新建文件夹\新建文件夹'  # 此处改为需要修改的照片文件夹路径
+    folder = r'D:\下载\QQ空间备份_645461002\Albums\亲人\亲情'  # 此处改为需要修改的照片文件夹路径
     no_exif, exif_load_error, no_time_in_name = [[] for i in range(3)]
 
-    motion = input('Change name or time: ') # 输入需要修改照片name还是time
-    while motion not in ['name', 'time']:
-        motion = input('Please just input name or time: ')
-    if motion == 'name':
-        change_photo_name(folder)
-    else:  # motion == 'time'
-        change_photo_time(folder)
+    # motion = input('Change name or time: ') # 输入需要修改照片name还是time
+    # while motion not in ['name', 'time']:
+    #     motion = input('Please just input name or time: ')
+    # if motion == 'name':
+    #     change_photo_name(folder)
+    # else:  # motion == 'time'
+    #     change_photo_time(folder)
+    change_photo_time(folder)
     
     # 统计不能执行的照片文件
     if no_exif: 
