@@ -55,8 +55,8 @@ def change_photo_name(folder):
         print(f'{file_num - count} Working on file: {photo_name}') # 显示处理进度
         count += 1
         photo_path = os.path.join(folder, photo_name)  # 照片的绝对路径
-        if check_format(photo_path) == 'PNG': photo_path = png2jpg(photo_path)
-        if check_format(photo_path) in ['JPG', 'JPEG']:
+        # if check_format(photo_path) == 'PNG': photo_path = png2jpg(photo_path)
+        if check_format(photo_path) in ['JPG', 'JPEG','PNG']:
             if check_exif(photo_path):  # 是JPG且Exif包含时间信息
                 photo_time = get_time_from_exif(photo_path)
             else:  # Exif中不包含拍摄日期，修改文件名为照片修改日期 
@@ -121,9 +121,9 @@ def change_photo_time(folder):
         print(f'{file_num - count} Working on file: {photo_name}')
         count += 1
         photo_path = os.path.join(folder, photo_name)  # 照片的绝对路径
-        if check_format(photo_path) == 'PNG': 
-            photo_path = png2jpg(photo_path)
-        if check_format(photo_path) in ['JPG', 'JPEG']:
+        # if check_format(photo_path) == 'PNG': 
+        #     photo_path = png2jpg(photo_path)
+        if check_format(photo_path) in ['JPG', 'JPEG','PNG']:
             set_photo_time(photo_name, photo_path, folder)
         else:
             if not path.isfile(os.path.join(folder, photo_name)):
@@ -140,7 +140,7 @@ def get_time_from_name(photo_name, folder):
     '''
     pn = photo_name
     # 文件名包含年月日时分秒，无分隔符或分隔符为（-._/）四种之一，如'2022.08.08_07/58/10.jpg'
-    pattern_1 = re.compile(r'\d{4}([-|.|/|_]?\d{2}){2}([-|.|/|_]?[0-5][0-9]){3}')
+    pattern_1 = re.compile(r'\d{4}([-|.|/|_]?\d{2}){2}([-|.|/|_]?[0-2][0-9]){1}([-|.|/|_]?[0-5][0-9]){3}')
     pattern_2 = re.compile(r'\d{10}')  # 文件名包含时间戳，如'mmexport1569824283462.jpg'
     #仅日期
     pattern_3 = re.compile(r'\d{4}([-|.|/|_]?\d{2}){2}') # 01_2015-09-07_F4CCBCFE (1).jpeg
@@ -204,7 +204,7 @@ if __name__ == '__main__':
     '''
     folder: 需要修改的照片文件夹路径
     '''
-    folder = r'D:\下载\test'  # 此处改为需要修改的照片文件夹路径
+    folder = r'D:\下载\Albums'  # 此处改为需要修改的照片文件夹路径
     no_exif, exif_load_error, no_time_in_name = [[] for i in range(3)]
 
     # motion = input('Change name or time: ') # 输入需要修改照片name还是time
