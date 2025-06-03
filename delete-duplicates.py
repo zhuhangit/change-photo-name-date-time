@@ -29,5 +29,5 @@ if __name__ == "__main__":
     """
     folder: 文件夹路径
     """
-    folder = r"D:\4 照片\新建文件夹\新建文件夹"
+    folder = r"/Users/apple/Desktop/照片处理/原始照片"
     del_duplicate(folder)

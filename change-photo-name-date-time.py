@@ -139,8 +139,8 @@ def get_time_from_name(photo_name, folder):
     from 'IMG_20220102_030405.jpg' to '2022:01:01 03:04:05'
     '''
     pn = photo_name
-    # 文件名包含年月日时分秒，无分隔符或分隔符为（-._/）四种之一，如'2022.08.08_07/58/10.jpg'
-    pattern_1 = re.compile(r'\d{4}([-|.|/|_]?\d{2}){2}([-|.|/|_]?[0-2][0-9]){1}([-|.|/|_]?[0-5][0-9]){3}')
+    # 文件名包含年月日时分秒，无分隔符或分隔符为（-._/）四种之一，如'2025-06-02_23:52:52.jpg'
+    pattern_1 = re.compile(r'\d{4}([/-/./_]?\d{2}){2}([/-/./_ ]?[0-2][0-9]){1}([/-/./_//:]?[0-5][0-9]){1,}')
     pattern_2 = re.compile(r'\d{10}')  # 文件名包含时间戳，如'mmexport1569824283462.jpg'
     #仅日期
     pattern_3 = re.compile(r'\d{4}([-|.|/|_]?\d{2}){2}') # 01_2015-09-07_F4CCBCFE (1).jpeg
@@ -148,7 +148,7 @@ def get_time_from_name(photo_name, folder):
     if pattern_1.search(pn):  # 满足pattern_1，文件名包含年月日时分秒
         pn = pattern_1.search(pn).group()
         pn = pn.replace('_', '').replace('-', '').replace('.', '').replace('/', '')
-        photo_time = f'{pn[0:4]}:{pn[4:6]}:{pn[6:8]} {pn[8:10]}:{pn[10:12]}:{pn[12:14]}'
+        photo_time = f'{pn[0:4]}:{pn[4:6]}:{pn[6:8]} {pn[8:10]}:00:00'
     elif pattern_3.search(pn):  # 满足pattern_1，文件名包含年月日
         pn = pattern_3.search(pn).group()
         pn = pn.replace('_', '').replace('-', '').replace('.', '').replace('/', '')
@@ -204,7 +204,7 @@ if __name__ == '__main__':
     '''
     folder: 需要修改的照片文件夹路径
     '''
-    folder = r'D:\下载\Albums'  # 此处改为需要修改的照片文件夹路径
+    folder = r'/Users/apple/Desktop/照片处理/原始照片'  # 此处改为需要修改的照片文件夹路径
     no_exif, exif_load_error, no_time_in_name = [[] for i in range(3)]
 
     # motion = input('Change name or time: ') # 输入需要修改照片name还是time
