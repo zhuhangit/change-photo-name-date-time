@@ -30,6 +30,7 @@ def check_exif(photo_path):
     except:
         return False
 
+
 def get_time_from_exif(photo_path):
     '''
     从Exif中提取照片时间，返回格式为2021:04:22 07:07:07
@@ -38,6 +39,7 @@ def get_time_from_exif(photo_path):
     photo_time = exif_dict['Exif'][piexif.ExifIFD.DateTimeOriginal]  # bytes
     photo_time = bytes.decode(photo_time)  # 解码后为2021:04:22 07:07:07
     return photo_time
+
 
 def check_photo_exif(folder):
     '''
@@ -52,17 +54,34 @@ def check_photo_exif(folder):
         photo_path = os.path.join(folder, photo_name)  # 照片的绝对路径
         if check_format(photo_path) in ['JPG', 'JPEG', 'PNG']:
             check_photo(photo_name, photo_path, folder)
+        else:
+            if not path.isfile(os.path.join(folder, photo_name)) and not photo_name.__eq__('tmp'):
+                # 文件夹递归
+                check_photo_exif(os.path.join(folder, photo_name))
+
 
 def check_photo(photo_name, photo_path, folder):
     '''
     读取exif信息
     '''
     try:
-        exif_dict = piexif.load(photo_path)  # 读取现有Exif信息
-        # 设置Exif信息，注意DateTime在ImageIFD里面
-        print('\t 0th', exif_dict['0th'][piexif.ImageIFD.DateTime])
-        print('\t Exif DateTimeOriginal', exif_dict['Exif'][piexif.ExifIFD.DateTimeOriginal])
-        print('\t Exif DateTimeDigitized', exif_dict['Exif'][piexif.ExifIFD.DateTimeDigitized])
+        file_path = photo_path
+        with Image.open(file_path) as img:
+            # 确保图像是 PNG 格式
+            if img.format == 'PNG':
+                # 检查是否有 EXIF 数据
+                exif_data = img.info.get('exif')
+                # 将 EXIF 数据转换为字典
+                exif_dict = piexif.load(exif_data)
+                # 检查并修改 DateTimeOriginal 字段
+                datetime_original = exif_dict['Exif'].get(piexif.ExifIFD.DateTimeOriginal)
+                print('\t png DateTimeOriginal', datetime_original)
+            else:
+                exif_dict = piexif.load(photo_path)  # 读取现有Exif信息
+                # 设置Exif信息，注意DateTime在ImageIFD里面
+                print('\t 0th', exif_dict['0th'][piexif.ImageIFD.DateTime])
+                print('\t Exif DateTimeOriginal', exif_dict['Exif'][piexif.ExifIFD.DateTimeOriginal])
+                print('\t Exif DateTimeDigitized', exif_dict['Exif'][piexif.ExifIFD.DateTimeDigitized])
     except:
         exif_load_error.append(photo_name)
         print('  Exif load error')
@@ -77,6 +96,7 @@ def check_photo(photo_name, photo_path, folder):
         shutil.copy2(source_file, target_directory)
         print("\t 文件复制成功！")
 
+
 # ------------------------------------------------------------------
 ## main
 # ------------------------------------------------------------------
@@ -84,7 +104,7 @@ if __name__ == '__main__':
     '''
     folder: 需要检查的照片文件夹路径
     '''
-    folder = r'/Users/apple/Desktop/照片处理/原始照片'  # 此处改为需要修改的照片文件夹路径
+    folder = r'/Users/apple/Desktop/2016'  # 此处改为需要修改的照片文件夹路径
     no_exif, exif_load_error, no_time_in_name = [[] for i in range(3)]
     check_photo_exif(folder)
 
@@ -92,6 +112,6 @@ if __name__ == '__main__':
     if no_exif:
         print('Photos_no_exif:\n', no_exif)
     if exif_load_error:
-        print('Photos_exif_load_error:\n', exif_load_error)
+        print('Photos_exif_load_error:\n', exif_load_error.__len__(), exif_load_error)
     if no_time_in_name:
         print('Photos_no_time_in_name:\n', no_time_in_name)
