@@ -143,7 +143,7 @@ def get_time_from_name(photo_name, folder):
     pattern_1 = re.compile(r'\d{4}([/-/./_]?\d{2}){2}([/-/./_ ]?[0-2][0-9]){1}([/-/./_//:]?[0-5][0-9]){1,}')
     pattern_2 = re.compile(r'\d{10}')  # 文件名包含时间戳，如'mmexport1569824283462.jpg'
     #仅日期
-    pattern_3 = re.compile(r'\d{4}([-|.|/|_]?\d{2}){2}') # 01_2015-09-07_F4CCBCFE (1).jpeg
+    pattern_3 = re.compile(r'\d{4}([-|.|/|_ ]?\d{2}){2}') # 01_2015-09-07_F4CCBCFE (1).jpeg
 
     if pattern_1.search(pn):  # 满足pattern_1，文件名包含年月日时分秒
         pn = pattern_1.search(pn).group()

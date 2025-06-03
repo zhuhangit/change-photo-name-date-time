@@ -1,7 +1,8 @@
 # Change photo name by photo date/time and vice versa.
 # 功能：
-# 1. 根据照片名称修改照片日期：根据照片名中包含的日期信息，修改照片Exif中的日期信息
-# 2. 根据照片日期修改照片名称：根据照片Exif中的日期信息，按照统一格式重命名照片
+# 1. 根据照片创建日期，修改 exif 信息
+# 2. 仅处理“tmp”文件夹
+# 3. 支持 png 信息修改、支持子文件夹
 
 import os, time, piexif, re
 import platform
