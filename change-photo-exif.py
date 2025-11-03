@@ -1,5 +1,5 @@
 # Change photo name by photo date/time and vice versa.
-# 功能：
+# 功能【推荐】：
 # 1. 根据照片创建日期，修改 exif 信息
 # 2. 仅处理“tmp”文件夹
 # 3. 支持 png 信息修改、支持子文件夹
@@ -118,7 +118,7 @@ if __name__ == '__main__':
     '''
     folder: 需要修改的照片文件夹路径
     '''
-    folder = r'/Users/apple/Desktop/2016'  # 此处改为需要修改的照片文件夹路径
+    folder = r'//Users/apple/Desktop/test'  # 此处改为需要修改的照片文件夹路径
     # folder += r'/tmp'  # 默认使用临时文件夹
     name = ''
     no_exif, exif_load_error, no_time_in_name, change_success = [[] for i in range(4)]

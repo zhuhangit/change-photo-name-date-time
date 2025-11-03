@@ -147,7 +147,7 @@ if __name__ == '__main__':
     '''
     folder: 需要修改的照片文件夹路径
     '''
-    folder = r'/Users/apple/Desktop/处理照片时间'  # 此处改为需要修改的照片文件夹路径
+    folder = r'/Users/apple/Desktop/test'  # 此处改为需要修改的照片文件夹路径
     # folder += r'/tmp'  # 默认使用临时文件夹
     no_exif, exif_load_error, no_time_in_name, change_success = [[] for i in range(4)]
     change_photo_exif_file_name(folder)

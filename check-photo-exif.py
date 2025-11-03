@@ -7,6 +7,8 @@
 import os, time, piexif, re
 import re
 import shutil
+from sys import exception
+
 from PIL import Image
 from os import path
 
@@ -76,6 +78,9 @@ def check_photo(photo_name, photo_path, folder):
                 exif_dict = piexif.load(exif_data)
                 # 检查并修改 DateTimeOriginal 字段
                 datetime_original = exif_dict['Exif'].get(piexif.ExifIFD.DateTimeOriginal)
+                # png存在空值
+                if datetime_original == None:
+                    raise Exception(None)
                 print('\t png DateTimeOriginal', datetime_original)
             else:
                 exif_dict = piexif.load(photo_path)  # 读取现有Exif信息
@@ -83,9 +88,9 @@ def check_photo(photo_name, photo_path, folder):
                 print('\t 0th', exif_dict['0th'][piexif.ImageIFD.DateTime])
                 print('\t Exif DateTimeOriginal', exif_dict['Exif'][piexif.ExifIFD.DateTimeOriginal])
                 print('\t Exif DateTimeDigitized', exif_dict['Exif'][piexif.ExifIFD.DateTimeDigitized])
-    except:
+    except Exception as ex:
         exif_load_error.append(photo_name)
-        print('  Exif load error')
+        print('  Exif load error：',ex)
         # 源文件路径
         source_file = photo_path
         # 目标目录
@@ -105,7 +110,7 @@ if __name__ == '__main__':
     '''
     folder: 需要检查的照片文件夹路径
     '''
-    folder = r'/Users/apple/Desktop/2016'  # 此处改为需要修改的照片文件夹路径
+    folder = r'/Users/apple/Desktop/2025_google'  # 此处改为需要修改的照片文件夹路径
     no_exif, exif_load_error, no_time_in_name = [[] for i in range(3)]
     check_photo_exif(folder)
 
