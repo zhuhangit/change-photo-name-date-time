@@ -2,19 +2,12 @@
 # 功能【推荐】：
 # 1. 根据照片创建日期，修改 exif 信息
 # 2. 仅处理“tmp”文件夹
-# 3. 支持 png 信息修改、支持子文件夹
+# 3. 支持 png 信息修改、支持子文件夹、增强型 EXIF 错误恢复机制
 
-import os, time, piexif, re
+import os, piexif
 import platform
-import re
-import shutil
-import time
 from datetime import datetime
-from sys import excepthook
-
 from PIL import Image
-from os import path
-
 
 # ------------------------------------------------------------------
 ## general functions
@@ -25,111 +18,150 @@ def check_format(photo_path):
     '''
     return str.upper(os.path.splitext(photo_path)[1][1:])
 
+def safe_dump_exif(exif_dict, photo_time_bytes):
+    '''
+    安全导出 EXIF 数据的核心拦截函数：
+    处理因 iOS/macOS 私有标签或复杂字节流导致的 piexif.dump 崩溃问题。
+    '''
+    # 1. 预先清理最容易导致崩溃的异常标签（例如 MakerNote, SceneType, UserComment）
+    tags_to_remove = [piexif.ExifIFD.MakerNote, piexif.ExifIFD.SceneType, piexif.ExifIFD.UserComment]
+    for tag in tags_to_remove:
+        if tag in exif_dict.get('Exif', {}):
+            del exif_dict['Exif'][tag]
+
+    try:
+        # 尝试标准导出
+        return piexif.dump(exif_dict)
+    except Exception:
+        # 2. 降级方案：如果原有其他 EXIF 结构依然损坏导致崩溃，强行剥离，构建纯净的极简 EXIF
+        clean_exif = {"0th": {}, "Exif": {}, "GPS": {}, "Interop": {}, "1st": {}}
+        clean_exif['0th'][piexif.ImageIFD.DateTime] = photo_time_bytes
+
+        # 尽最大努力保留原有最核心的属性 (方向、品牌、机型)
+        safe_0th_tags = [piexif.ImageIFD.Orientation, piexif.ImageIFD.Make, piexif.ImageIFD.Model]
+        for tag in safe_0th_tags:
+            if tag in exif_dict.get('0th', {}):
+                clean_exif['0th'][tag] = exif_dict['0th'][tag]
+
+        clean_exif['Exif'][piexif.ExifIFD.DateTimeOriginal] = photo_time_bytes
+        clean_exif['Exif'][piexif.ExifIFD.DateTimeDigitized] = photo_time_bytes
+
+        return piexif.dump(clean_exif)
 
 def change_photo_exif(folder, name):
     '''
-    修改该路径下的所有JPG照片的时间
+    修改该路径下的所有照片的时间
     '''
+    # 过滤隐藏文件 (如 macOS 下的 .DS_Store)，防止意外报错
+    files = [f for f in os.listdir(folder) if not f.startswith('.')]
+    file_num = len(files)
     count = 0
-    file_num = len(os.listdir(folder))
-    for photo_name in os.listdir(folder):
-        # 展示剩余文件数量 + 正在处理的文件名
+
+    for photo_name in files:
         print(f'{file_num - count} Working on file: {photo_name}')
         count += 1
-        photo_path = os.path.join(folder, photo_name)  # 照片的绝对路径
-        # 仅处理 tmp 文件夹
-        if check_format(photo_path) in ['JPG', 'JPEG', 'PNG'] and name.__eq__("tmp"):
-            check_photo(photo_name, photo_path, folder)
-        else:
-            if not path.isfile(os.path.join(folder, photo_name)):
-                # 文件夹递归
-                change_photo_exif(os.path.join(folder, photo_name), photo_name)
+        photo_path = os.path.join(folder, photo_name)
 
+        if os.path.isfile(photo_path):
+            if check_format(photo_path) in ['JPG', 'JPEG', 'PNG'] and name == "tmp":
+                check_photo(photo_name, photo_path, folder)
+        else:
+            # 文件夹递归
+            change_photo_exif(photo_path, photo_name)
 
 def check_photo(photo_name, photo_path, folder):
     '''
     获取文件创建时间，导入exif信息
     '''
     file_path = photo_path
-    # 获取文件状态信息
     file_stat = os.stat(file_path)
-    # 获取创建时间（Windows 下是 st_ctime）
-    # 根据操作系统选择使用的属性
+
+    # 提取时间
     if platform.system() == 'Darwin':
-        # macOS 下, st_birthtime 是创建时间
         creation_time = file_stat.st_birthtime
     else:
         creation_time = file_stat.st_ctime
-    # 将时间戳转换为可读格式
+
     readable_time = datetime.fromtimestamp(creation_time).strftime('%Y:%m:%d %H:%M:%S')
-    photo_time = readable_time
+    photo_time_bytes = readable_time.encode('utf-8')
+
     try:
-        with Image.open(file_path) as img:
-            # 确保图像是 PNG 格式
-            if img.format == 'PNG':
-                # 检查是否有 EXIF 数据
+        fmt = check_format(file_path)
+
+        # ----------------- 处理 PNG -----------------
+        if fmt == 'PNG':
+            with Image.open(file_path) as img:
+                img_copy = img.copy()
                 exif_data = img.info.get('exif')
-                if exif_data is None:
-                    # 创建初始 EXIF 数据字典
-                    exif_dict = {
-                        "0th": {},
-                        "Exif": {},
-                        "GPS": {},
-                        "Interop": {},
-                        "1st": {}
-                    }
-                else:
-                    # 将 EXIF 数据转换为字典
-                    exif_dict = piexif.load(exif_data)
-                # 检查并修改 DateTimeOriginal 字段
-                datetime_original = exif_dict['Exif'].get(piexif.ExifIFD.DateTimeOriginal)
-                if datetime_original:
-                    print(f"原始时间: {datetime_original.decode('utf-8')}")
-                # 修改时间，例如更改为当前时间
-                new_datetime = photo_time.encode('utf-8')  # 使用字节字符串格式
-                exif_dict['Exif'][piexif.ExifIFD.DateTimeOriginal] = new_datetime
-                # 保存修改后的 EXIF 数据
-                exif_bytes = piexif.dump(exif_dict)
-                # 更新图像的 EXIF 数据
-                img.save(file_path, exif=exif_bytes)
-                print(f'  Done, photo time has been changed to {new_datetime}')
-            else:
-                exif_dict = piexif.load(photo_path)  # 读取现有Exif信息
-                # 设置Exif信息，注意DateTime在ImageIFD里面
-                exif_dict['0th'][piexif.ImageIFD.DateTime] = photo_time
-                exif_dict['Exif'][piexif.ExifIFD.DateTimeOriginal] = photo_time
-                exif_dict['Exif'][piexif.ExifIFD.DateTimeDigitized] = photo_time
+                icc_profile = img.info.get('icc_profile')
+
+            exif_dict = {"0th": {}, "Exif": {}, "GPS": {}, "Interop": {}, "1st": {}}
+            if exif_data:
                 try:
-                    exif_bytes = piexif.dump(exif_dict)
-                    piexif.insert(exif_bytes, photo_path)  # 插入Exif信息
-                    print(f'  Done, photo time has been changed to {photo_time}')
-                    change_success.append(photo_name)
-                except:
-                    print(f'  Exif dump error')
+                    # 兼容部分新版 PIL 返回 Image.Exif 对象而非 bytes 的情况
+                    if hasattr(exif_data, 'tobytes'):
+                        exif_data = exif_data.tobytes()
+                    exif_dict = piexif.load(exif_data)
+                except Exception:
+                    pass # 若原始 EXIF 格式极为混乱导致读取失败，则直接使用上方空字典新建
+
+            # 修改三大时间标签
+            exif_dict['0th'][piexif.ImageIFD.DateTime] = photo_time_bytes
+            exif_dict['Exif'][piexif.ExifIFD.DateTimeOriginal] = photo_time_bytes
+            exif_dict['Exif'][piexif.ExifIFD.DateTimeDigitized] = photo_time_bytes
+
+            # 使用加强型导出函数
+            exif_bytes = safe_dump_exif(exif_dict, photo_time_bytes)
+
+            # 组织保存参数
+            save_kwargs = {"exif": exif_bytes}
+            if icc_profile:
+                save_kwargs["icc_profile"] = icc_profile
+
+            img_copy.save(file_path, "PNG", **save_kwargs)
+
+            print(f'  Done, PNG photo time has been changed to {readable_time}')
+            change_success.append(photo_name)
+
+        # ----------------- 处理 JPG/JPEG -----------------
+        elif fmt in ['JPG', 'JPEG']:
+            try:
+                exif_dict = piexif.load(file_path)
+            except Exception:
+                exif_dict = {"0th": {}, "Exif": {}, "GPS": {}, "Interop": {}, "1st": {}}
+
+            exif_dict['0th'][piexif.ImageIFD.DateTime] = photo_time_bytes
+            exif_dict['Exif'][piexif.ExifIFD.DateTimeOriginal] = photo_time_bytes
+            exif_dict['Exif'][piexif.ExifIFD.DateTimeDigitized] = photo_time_bytes
+
+            # 使用加强型导出函数
+            exif_bytes = safe_dump_exif(exif_dict, photo_time_bytes)
+            piexif.insert(exif_bytes, file_path)
+
+            print(f'  Done, JPG photo time has been changed to {readable_time}')
+            change_success.append(photo_name)
+
     except Exception as e:
         exif_load_error.append(photo_name)
-        print('  Exif load error：', e)
-
+        print(f'  Exif error for {photo_name}: {e}')
 
 # ------------------------------------------------------------------
 ## main
 # ------------------------------------------------------------------
 if __name__ == '__main__':
-    '''
-    folder: 需要修改的照片文件夹路径
-    '''
-    folder = r'//Users/apple/Desktop/test'  # 此处改为需要修改的照片文件夹路径
-    # folder += r'/tmp'  # 默认使用临时文件夹
+    folder = r'/Users/apple/Desktop/2026'  # 此处改为需要修改的照片文件夹路径
     name = ''
-    no_exif, exif_load_error, no_time_in_name, change_success = [[] for i in range(4)]
+
+    no_exif, exif_load_error, no_time_in_name, change_success = [], [], [], []
+
     change_photo_exif(folder, name)
 
-    # 统计不能执行的照片文件
+    # 打印最终统计信息
     if no_exif:
-        print('Photos_no_exif:\n', no_exif)
+        print('\nPhotos_no_exif:\n', no_exif)
     if exif_load_error:
-        print('Photos_exif_load_error:\n', exif_load_error)
+        print('\nPhotos_exif_load_error:\n', exif_load_error)
     if no_time_in_name:
-        print('Photos_no_time_in_name:\n', no_time_in_name)
+        print('\nPhotos_no_time_in_name:\n', no_time_in_name)
     if change_success:
-        print('Photos_change_success:\n', len(change_success), change_success)
+        print(f'\nPhotos_change_success (Total: {len(change_success)}):\n', change_success)
