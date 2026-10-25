@@ -7,8 +7,6 @@
 import os, time, piexif, re
 import re
 import shutil
-from sys import exception
-
 from PIL import Image
 from os import path
 
@@ -110,7 +108,7 @@ if __name__ == '__main__':
     '''
     folder: 需要检查的照片文件夹路径
     '''
-    folder = r'/Users/apple/Desktop/2026'  # 此处改为需要修改的照片文件夹路径
+    folder = r'/Users/apple/Downloads/2026'  # 此处改为需要修改的照片文件夹路径
     no_exif, exif_load_error, no_time_in_name = [[] for i in range(3)]
     check_photo_exif(folder)
 

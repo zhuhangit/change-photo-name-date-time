@@ -149,7 +149,7 @@ def check_photo(photo_name, photo_path, folder):
 ## main
 # ------------------------------------------------------------------
 if __name__ == '__main__':
-    folder = r'/Users/apple/Desktop/2026'  # 此处改为需要修改的照片文件夹路径
+    folder = r'/Users/apple/Downloads/2026'  # 此处改为需要修改的照片文件夹路径
     name = ''
 
     no_exif, exif_load_error, no_time_in_name, change_success = [], [], [], []
